@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "walle-web"
+version = "0.1.0"
+description = "Flask web interface for WALL-E robot"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.0",
+    "walle-core @ git+https://github.com/Buy-n-large/walle-core.git",
+]
+
+[project.scripts]
+walle-web = "walle_web:main"
+
+[project.urls]
+Repository = "https://github.com/Buy-n-large/walle-web"

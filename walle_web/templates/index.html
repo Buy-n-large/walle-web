@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WALL-E Control</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.3rem;
+      letter-spacing: 2px;
+    }
+
+    h1 span { color: #f5c400; }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 1.2rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .preview {
+      width: 100%;
+      height: 100px;
+      border-radius: 0.8rem;
+      margin-bottom: 1.5rem;
+      background: #000;
+      transition: background 0.2s;
+      border: 2px solid #2a2a4a;
+    }
+
+    .sliders { display: flex; flex-direction: column; gap: 1rem; }
+
+    .slider-row { display: flex; align-items: center; gap: 1rem; }
+
+    .slider-row label {
+      width: 1.2rem;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .slider-row label.r { color: #ff4444; }
+    .slider-row label.g { color: #44ff44; }
+    .slider-row label.b { color: #4488ff; }
+
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input#r { background: linear-gradient(to right, #000, #ff4444); }
+    input#g { background: linear-gradient(to right, #000, #44ff44); }
+    input#b { background: linear-gradient(to right, #000, #4488ff); }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .value {
+      width: 2.5rem;
+      text-align: right;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .presets {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .preset {
+      flex: 1;
+      min-width: 60px;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      transition: transform 0.1s;
+    }
+
+    .preset:active { transform: scale(0.95); }
+
+    .status {
+      margin-top: 1.2rem;
+      font-size: 0.75rem;
+      color: #666;
+      text-align: center;
+      min-height: 1rem;
+    }
+
+    .status.ok  { color: #44ff44; }
+    .status.err { color: #ff4444; }
+  </style>
+</head>
+<body>
+
+  <h1>W<span>A</span>LL-E</h1>
+  <p class="subtitle">Contrôle de la LED RGB</p>
+
+  <div class="card">
+    <div class="preview" id="preview"></div>
+
+    <div class="sliders">
+      <div class="slider-row">
+        <label class="r">R</label>
+        <input type="range" id="r" min="0" max="255" value="0">
+        <span class="value" id="vr">0</span>
+      </div>
+      <div class="slider-row">
+        <label class="g">G</label>
+        <input type="range" id="g" min="0" max="255" value="0">
+        <span class="value" id="vg">0</span>
+      </div>
+      <div class="slider-row">
+        <label class="b">B</label>
+        <input type="range" id="b" min="0" max="255" value="0">
+        <span class="value" id="vb">0</span>
+      </div>
+    </div>
+
+    <div class="presets">
+      <button class="preset" style="background:#ff2222" onclick="setRGB(255,0,0)">Rouge</button>
+      <button class="preset" style="background:#22bb22" onclick="setRGB(0,255,0)">Vert</button>
+      <button class="preset" style="background:#2255ff" onclick="setRGB(0,0,255)">Bleu</button>
+      <button class="preset" style="background:#f5c400;color:#000" onclick="setRGB(245,196,0)">Jaune</button>
+      <button class="preset" style="background:#ff6600" onclick="setRGB(255,100,0)">Orange</button>
+      <button class="preset" style="background:#222" onclick="setRGB(0,0,0)">Éteint</button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    const r = document.getElementById('r');
+    const g = document.getElementById('g');
+    const b = document.getElementById('b');
+    const preview = document.getElementById('preview');
+    const status  = document.getElementById('status');
+
+    let debounce;
+
+    function updatePreview() {
+      const rv = r.value, gv = g.value, bv = b.value;
+      document.getElementById('vr').textContent = rv;
+      document.getElementById('vg').textContent = gv;
+      document.getElementById('vb').textContent = bv;
+      preview.style.background = `rgb(${rv},${gv},${bv})`;
+    }
+
+    function sendLED() {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        fetch('/led', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ r: +r.value, g: +g.value, b: +b.value })
+        })
+        .then(res => res.json())
+        .then(() => {
+          status.textContent = `Envoyé → R:${r.value} G:${g.value} B:${b.value}`;
+          status.className = 'status ok';
+        })
+        .catch(() => {
+          status.textContent = 'Erreur de connexion';
+          status.className = 'status err';
+        });
+      }, 80);
+    }
+
+    function setRGB(rv, gv, bv) {
+      r.value = rv; g.value = gv; b.value = bv;
+      updatePreview();
+      sendLED();
+    }
+
+    [r, g, b].forEach(s => {
+      s.addEventListener('input', () => { updatePreview(); sendLED(); });
+    });
+
+    updatePreview();
+  </script>
+
+</body>
+</html>
