@@ -289,17 +289,19 @@
       <div class="knob-wrap">
         <div class="angle-display"><span id="servo-val">90</span><span>°</span></div>
 
-        <!-- Knob SVG -->
-        <svg class="knob-svg" id="knob" width="200" height="120" viewBox="0 0 200 120">
-          <!-- Arc de fond -->
-          <path id="arc-bg" stroke="#252550" stroke-width="12" fill="none" stroke-linecap="round"/>
+        <!-- Knob SVG : demi-cercle, centre (100,110), rayon 85 -->
+        <!-- 0° = gauche (15,110)  90° = haut (100,25)  180° = droite (185,110) -->
+        <svg class="knob-svg" id="knob" width="200" height="130" viewBox="0 0 200 130">
+          <!-- Arc de fond (demi-cercle complet) -->
+          <path d="M 15 110 A 85 85 0 0 1 185 110"
+                stroke="#252550" stroke-width="12" fill="none" stroke-linecap="round"/>
           <!-- Arc actif -->
           <path id="arc-active" stroke="#f5c400" stroke-width="12" fill="none" stroke-linecap="round"/>
           <!-- Handle -->
-          <circle id="handle" r="10" fill="#f5c400" stroke="#fff" stroke-width="2"/>
+          <circle id="handle" r="10" fill="#f5c400" stroke="#fff" stroke-width="2.5"/>
           <!-- Labels -->
-          <text x="10" y="118" fill="#555570" font-size="11" font-family="Inter">0°</text>
-          <text x="170" y="118" fill="#555570" font-size="11" font-family="Inter">180°</text>
+          <text x="4"   y="128" fill="#555570" font-size="11" font-family="Inter">0°</text>
+          <text x="163" y="128" fill="#555570" font-size="11" font-family="Inter">180°</text>
         </svg>
 
         <div class="servo-presets">
@@ -392,34 +394,41 @@ updatePreview();
 // =====================
 // SERVO KNOB
 // =====================
-const CX = 100, CY = 110, RADIUS = 80;
-const START_ANGLE = Math.PI;       // gauche = 0°
-const END_ANGLE   = 0;             // droite = 180°
+// Centre du demi-cercle SVG : (100, 110), rayon 85
+// 0°  servo = gauche  = (15,  110)
+// 90° servo = haut    = (100, 25)
+// 180° servo = droite = (185, 110)
 
+const CX = 100, CY = 110, RADIUS = 85;
 let servoAngle = 90;
 let servoTimer;
 
-function polarToXY(angleDeg) {
-  // 0° = gauche (PI), 180° = droite (0)
-  const rad = Math.PI - (angleDeg / 180) * Math.PI;
+function polarToXY(deg) {
+  // Mappe servo deg [0-180] → angle math [180°-0°] (gauche→droite via le haut)
+  const rad = Math.PI * (1 - deg / 180);
   return {
-    x: CX + RADIUS * Math.cos(rad),
-    y: CY - RADIUS * Math.sin(rad)
+    x: +(CX + RADIUS * Math.cos(rad)).toFixed(2),
+    y: +(CY - RADIUS * Math.sin(rad)).toFixed(2)
   };
 }
 
-function describeArc(fromDeg, toDeg) {
-  const s = polarToXY(fromDeg);
-  const e = polarToXY(toDeg);
-  const large = Math.abs(toDeg - fromDeg) > 90 ? 1 : 0;
-  const sweep = toDeg > fromDeg ? 0 : 1;
-  return `M ${s.x} ${s.y} A ${RADIUS} ${RADIUS} 0 ${large} ${sweep} ${e.x} ${e.y}`;
-}
-
 function renderKnob(deg) {
-  document.getElementById('arc-bg').setAttribute('d', describeArc(0, 180));
-  document.getElementById('arc-active').setAttribute('d', describeArc(0, deg));
+  deg = Math.max(0, Math.min(180, deg));
   const p = polarToXY(deg);
+
+  // Arc actif : de 0° (gauche) jusqu'à deg
+  // sweep=1 = sens horaire SVG = passe par le haut ✓
+  // large-arc=0 sauf si deg>180 (jamais ici)
+  let arcPath = '';
+  if (deg > 0.5) {
+    const start = polarToXY(0);
+    // Évite le cas dégénéré à 180° exact (les deux arcs sont égaux)
+    const safeDeg = Math.min(deg, 179.9);
+    const end = polarToXY(safeDeg);
+    arcPath = `M ${start.x} ${start.y} A ${RADIUS} ${RADIUS} 0 0 1 ${end.x} ${end.y}`;
+  }
+
+  document.getElementById('arc-active').setAttribute('d', arcPath);
   document.getElementById('handle').setAttribute('cx', p.x);
   document.getElementById('handle').setAttribute('cy', p.y);
   document.getElementById('servo-val').textContent = Math.round(deg);
@@ -442,26 +451,30 @@ function setServo(deg) {
   }, 80);
 }
 
-// Drag sur le SVG
+// Drag : convertit position souris/touch → angle servo
 const knob = document.getElementById('knob');
 let dragging = false;
 
-function svgAngleFromEvent(e) {
+function angleFromEvent(e) {
   const rect = knob.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  const scaleX = 200 / rect.width;
-  const scaleY = 120 / rect.height;
-  const x = (clientX - rect.left) * scaleX - CX;
-  const y = CY - (clientY - rect.top) * scaleY;
-  let deg = (Math.atan2(y, x) / Math.PI) * 180;
-  return Math.max(0, Math.min(180, deg));
+  // Position en coordonnées SVG
+  const svgX = (clientX - rect.left) * (200 / rect.width);
+  const svgY = (clientY - rect.top)  * (130 / rect.height);
+  // Vecteur depuis le centre, avec y inversé (SVG → math)
+  const dx =  svgX - CX;
+  const dy = -(svgY - CY);
+  // Angle math → angle servo
+  const mathAngle = Math.atan2(dy, dx) * 180 / Math.PI; // -180..180
+  const servo = 180 - mathAngle; // 0°=gauche, 90°=haut, 180°=droite
+  return Math.max(0, Math.min(180, servo));
 }
 
-knob.addEventListener('mousedown',  e => { dragging = true; setServo(svgAngleFromEvent(e)); });
-knob.addEventListener('touchstart', e => { dragging = true; setServo(svgAngleFromEvent(e)); }, {passive:true});
-window.addEventListener('mousemove',  e => { if (dragging) setServo(svgAngleFromEvent(e)); });
-window.addEventListener('touchmove',  e => { if (dragging) setServo(svgAngleFromEvent(e)); }, {passive:true});
+knob.addEventListener('mousedown',  e => { dragging = true; setServo(angleFromEvent(e)); });
+knob.addEventListener('touchstart', e => { dragging = true; setServo(angleFromEvent(e)); }, {passive:true});
+window.addEventListener('mousemove',  e => { if (dragging) setServo(angleFromEvent(e)); });
+window.addEventListener('touchmove',  e => { if (dragging) setServo(angleFromEvent(e)); }, {passive:true});
 window.addEventListener('mouseup',  () => dragging = false);
 window.addEventListener('touchend', () => dragging = false);
 
