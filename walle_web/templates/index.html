@@ -4,275 +4,525 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WALL-E Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f1a;
+      --sidebar:  #13132a;
+      --card:     #1a1a35;
+      --accent:   #f5c400;
+      --text:     #e0e0f0;
+      --muted:    #555570;
+      --radius:   1rem;
+    }
 
     body {
-      font-family: -apple-system, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      gap: 1.5rem;
     }
 
-    h1 { font-size: 2rem; letter-spacing: 2px; }
-    h1 span { color: #f5c400; }
-    .subtitle { font-size: 0.85rem; color: #888; }
+    /* === SIDEBAR === */
+    .sidebar {
+      width: 200px;
+      min-height: 100vh;
+      background: var(--sidebar);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1.2rem;
+      gap: 0.4rem;
+      flex-shrink: 0;
+      border-right: 1px solid #1e1e3a;
+    }
+
+    .logo {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      padding-left: 0.2rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.65rem 0.8rem;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover { background: #1e1e40; color: var(--text); }
+    .nav-item.active { background: #252550; color: var(--accent); }
+
+    .nav-icon { font-size: 1.1rem; width: 1.4rem; text-align: center; }
+
+    /* === MAIN === */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .page { display: none; width: 100%; max-width: 420px; flex-direction: column; gap: 1.2rem; }
+    .page.active { display: flex; }
 
     .card {
-      background: #16213e;
-      border-radius: 1.2rem;
+      background: var(--card);
+      border-radius: var(--radius);
       padding: 1.8rem;
-      width: 100%;
-      max-width: 380px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
 
-    .card h2 {
-      font-size: 0.8rem;
+    .card-title {
+      font-size: 0.72rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #666;
+      letter-spacing: 1.5px;
+      color: var(--muted);
       margin-bottom: 1.2rem;
     }
 
+    /* === LED === */
     .preview {
       width: 100%;
-      height: 90px;
-      border-radius: 0.8rem;
-      margin-bottom: 1.5rem;
+      height: 80px;
+      border-radius: 0.7rem;
+      margin-bottom: 1.4rem;
       background: #000;
-      transition: background 0.15s;
-      border: 2px solid #2a2a4a;
+      transition: background 0.12s;
+      border: 1px solid #252540;
     }
 
-    .sliders { display: flex; flex-direction: column; gap: 0.9rem; }
-
+    .sliders { display: flex; flex-direction: column; gap: 0.85rem; }
     .slider-row { display: flex; align-items: center; gap: 0.8rem; }
-
-    .slider-row label { width: 1.2rem; font-weight: bold; font-size: 1rem; }
-    .slider-row label.r { color: #ff4444; }
-    .slider-row label.g { color: #44ff44; }
-    .slider-row label.b { color: #4488ff; }
-    .slider-row label.cal { font-size: 0.75rem; color: #aaa; width: 1.5rem; }
+    .slider-row label { font-weight: 700; font-size: 0.9rem; width: 1rem; }
+    .lr { color: #ff4455; } .lg { color: #44ee66; } .lb { color: #4488ff; }
+    .value { width: 2.5rem; text-align: right; font-size: 0.8rem; color: var(--muted); }
 
     input[type=range] {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 6px;
-      border-radius: 3px;
-      outline: none;
+      flex: 1; -webkit-appearance: none;
+      height: 5px; border-radius: 3px; outline: none; cursor: pointer;
     }
-
-    input#r { background: linear-gradient(to right, #000, #ff4444); }
-    input#g { background: linear-gradient(to right, #000, #44ff44); }
-    input#b { background: linear-gradient(to right, #000, #4488ff); }
-    input.cal-r { background: linear-gradient(to right, #333, #ff4444); }
-    input.cal-g { background: linear-gradient(to right, #333, #44ff44); }
-    input.cal-b { background: linear-gradient(to right, #333, #4488ff); }
-
+    #r  { background: linear-gradient(to right, #1a0010, #ff4455); }
+    #g  { background: linear-gradient(to right, #001a08, #44ee66); }
+    #b  { background: linear-gradient(to right, #00081a, #4488ff); }
     input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      background: #fff;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      -webkit-appearance: none; width: 16px; height: 16px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
 
-    .value { width: 2.5rem; text-align: right; font-size: 0.8rem; color: #aaa; }
-
-    .presets {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-top: 1.2rem;
-    }
-
+    .presets { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.2rem; }
     .preset {
-      flex: 1;
-      min-width: 55px;
-      padding: 0.45rem 0.2rem;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-size: 0.7rem;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-      transition: transform 0.1s;
+      flex: 1; min-width: 52px; padding: 0.45rem 0.2rem;
+      border: none; border-radius: 0.5rem; cursor: pointer;
+      font-size: 0.7rem; font-weight: 700; color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .preset:active { transform: scale(0.94); opacity: 0.8; }
+
+    /* === SERVO KNOB === */
+    .knob-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
     }
 
-    .preset:active { transform: scale(0.95); }
+    .knob-svg { cursor: grab; user-select: none; touch-action: none; }
+    .knob-svg:active { cursor: grabbing; }
 
-    .status {
-      margin-top: 1rem;
-      font-size: 0.75rem;
-      color: #555;
-      text-align: center;
+    .angle-display {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    .angle-display span { font-size: 1.2rem; color: var(--muted); }
+
+    .servo-presets { display: flex; gap: 0.6rem; }
+    .servo-preset {
+      flex: 1; padding: 0.55rem;
+      background: #252550; border: none; border-radius: 0.5rem;
+      color: var(--text); font-size: 0.85rem; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .servo-preset:hover { background: #303060; }
+
+    /* === STEPPER === */
+    .stepper-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      align-items: center;
+    }
+
+    .step-btns {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .step-btn {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      border: 2px solid #303060;
+      background: #1e1e40;
+      color: var(--text);
+      font-size: 1.8rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .step-btn:hover { background: #252555; }
+    .step-btn:active { transform: scale(0.92); }
+    .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .step-size {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+    }
+
+    .step-chip {
+      padding: 0.35rem 0.8rem;
+      border-radius: 99px;
+      background: #1e1e40;
+      border: 1px solid #303060;
+      color: var(--muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .step-chip.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+
+    .stepper-status {
+      font-size: 0.78rem;
+      color: var(--muted);
       min-height: 1rem;
     }
-    .status.ok  { color: #44ff44; }
-    .status.err { color: #ff4444; }
+    .stepper-status.busy { color: var(--accent); }
 
-    details { width: 100%; max-width: 380px; }
-    summary {
-      font-size: 0.75rem;
-      color: #555;
-      cursor: pointer;
-      text-align: center;
-      padding: 0.3rem;
+    /* === STATUS === */
+    .status {
+      font-size: 0.75rem; color: var(--muted);
+      text-align: center; min-height: 1rem; margin-top: 0.8rem;
     }
-    summary:hover { color: #888; }
+    .status.ok  { color: #44ee66; }
+    .status.err { color: #ff4455; }
   </style>
 </head>
 <body>
 
-  <h1>W<span>A</span>LL-E</h1>
-  <p class="subtitle">Contrôle LED RGB</p>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">WALL·E</div>
+  <button class="nav-item active" onclick="showPage('led', this)">
+    <span class="nav-icon">💡</span> LED RGB
+  </button>
+  <button class="nav-item" onclick="showPage('servo', this)">
+    <span class="nav-icon">🔄</span> Servo
+  </button>
+  <button class="nav-item" onclick="showPage('stepper', this)">
+    <span class="nav-icon">⚙️</span> Stepper
+  </button>
+</aside>
 
-  <!-- Contrôle couleur principal -->
-  <div class="card">
-    <h2>Couleur</h2>
-    <div class="preview" id="preview"></div>
+<!-- MAIN -->
+<main class="main">
 
-    <div class="sliders">
-      <div class="slider-row">
-        <label class="r">R</label>
-        <input type="range" id="r" min="0" max="255" value="0">
-        <span class="value" id="vr">0</span>
-      </div>
-      <div class="slider-row">
-        <label class="g">G</label>
-        <input type="range" id="g" min="0" max="255" value="0">
-        <span class="value" id="vg">0</span>
-      </div>
-      <div class="slider-row">
-        <label class="b">B</label>
-        <input type="range" id="b" min="0" max="255" value="0">
-        <span class="value" id="vb">0</span>
-      </div>
-    </div>
-
-    <div class="presets">
-      <button class="preset" style="background:#cc2200" onclick="setRGB(255,0,0)">Rouge</button>
-      <button class="preset" style="background:#009900" onclick="setRGB(0,255,0)">Vert</button>
-      <button class="preset" style="background:#2255ff" onclick="setRGB(0,0,255)">Bleu</button>
-      <button class="preset" style="background:#f5c400;color:#000" onclick="setRGB(255,255,0)">Jaune</button>
-      <button class="preset" style="background:#ff6600" onclick="setRGB(255,140,0)">Orange</button>
-      <button class="preset" style="background:#888" onclick="setRGB(255,255,255)">Blanc</button>
-      <button class="preset" style="background:#111;border:1px solid #333" onclick="setRGB(0,0,0)">Éteint</button>
-    </div>
-
-    <div class="status" id="status"></div>
-  </div>
-
-  <!-- Calibration (repliée par défaut) -->
-  <details>
-    <summary>⚙️ Calibration des canaux</summary>
-    <div class="card" style="margin-top:0.5rem">
-      <h2>Correction par canal (0 → 1.0)</h2>
-      <p style="font-size:0.72rem;color:#666;margin-bottom:1rem">
-        Si le blanc tire vers une couleur, réduire ce canal. Rouge trop faible ? Augmenter R.
-      </p>
+  <!-- PAGE LED -->
+  <div class="page active" id="page-led">
+    <div class="card">
+      <p class="card-title">Couleur LED RGB</p>
+      <div class="preview" id="preview"></div>
       <div class="sliders">
         <div class="slider-row">
-          <label class="cal r">R</label>
-          <input type="range" class="cal-r" id="cal-r" min="0" max="100" value="{{ (cal.r * 100)|int }}">
-          <span class="value" id="vcr">{{ "%.2f"|format(cal.r) }}</span>
+          <label class="lr">R</label>
+          <input type="range" id="r" min="0" max="255" value="0">
+          <span class="value" id="vr">0</span>
         </div>
         <div class="slider-row">
-          <label class="cal g">G</label>
-          <input type="range" class="cal-g" id="cal-g" min="0" max="100" value="{{ (cal.g * 100)|int }}">
-          <span class="value" id="vcg">{{ "%.2f"|format(cal.g) }}</span>
+          <label class="lg">G</label>
+          <input type="range" id="g" min="0" max="255" value="0">
+          <span class="value" id="vg">0</span>
         </div>
         <div class="slider-row">
-          <label class="cal b">B</label>
-          <input type="range" class="cal-b" id="cal-b" min="0" max="100" value="{{ (cal.b * 100)|int }}">
-          <span class="value" id="vcb">{{ "%.2f"|format(cal.b) }}</span>
+          <label class="lb">B</label>
+          <input type="range" id="b" min="0" max="255" value="0">
+          <span class="value" id="vb">0</span>
         </div>
       </div>
-      <div class="status" id="cal-status"></div>
+      <div class="presets">
+        <button class="preset" style="background:#cc2200" onclick="setRGB(255,0,0)">Rouge</button>
+        <button class="preset" style="background:#008800" onclick="setRGB(0,255,0)">Vert</button>
+        <button class="preset" style="background:#2255ff" onclick="setRGB(0,0,255)">Bleu</button>
+        <button class="preset" style="background:#e5b800;color:#000" onclick="setRGB(255,255,0)">Jaune</button>
+        <button class="preset" style="background:#cc5500" onclick="setRGB(255,140,0)">Orange</button>
+        <button class="preset" style="background:#777" onclick="setRGB(255,255,255)">Blanc</button>
+        <button class="preset" style="background:#111;border:1px solid #333" onclick="setRGB(0,0,0)">Éteint</button>
+      </div>
+      <div class="status" id="led-status"></div>
     </div>
-  </details>
+  </div>
 
-  <script>
-    const r = document.getElementById('r');
-    const g = document.getElementById('g');
-    const b = document.getElementById('b');
-    const preview = document.getElementById('preview');
-    const status  = document.getElementById('status');
+  <!-- PAGE SERVO -->
+  <div class="page" id="page-servo">
+    <div class="card">
+      <p class="card-title">Position du servo (0° — 180°)</p>
+      <div class="knob-wrap">
+        <div class="angle-display"><span id="servo-val">90</span><span>°</span></div>
 
-    let ledDebounce, calDebounce;
+        <!-- Knob SVG -->
+        <svg class="knob-svg" id="knob" width="200" height="120" viewBox="0 0 200 120">
+          <!-- Arc de fond -->
+          <path id="arc-bg" stroke="#252550" stroke-width="12" fill="none" stroke-linecap="round"/>
+          <!-- Arc actif -->
+          <path id="arc-active" stroke="#f5c400" stroke-width="12" fill="none" stroke-linecap="round"/>
+          <!-- Handle -->
+          <circle id="handle" r="10" fill="#f5c400" stroke="#fff" stroke-width="2"/>
+          <!-- Labels -->
+          <text x="10" y="118" fill="#555570" font-size="11" font-family="Inter">0°</text>
+          <text x="170" y="118" fill="#555570" font-size="11" font-family="Inter">180°</text>
+        </svg>
 
-    function updatePreview() {
-      document.getElementById('vr').textContent = r.value;
-      document.getElementById('vg').textContent = g.value;
-      document.getElementById('vb').textContent = b.value;
-      preview.style.background = `rgb(${r.value},${g.value},${b.value})`;
-    }
+        <div class="servo-presets">
+          <button class="servo-preset" onclick="setServo(0)">0°</button>
+          <button class="servo-preset" onclick="setServo(45)">45°</button>
+          <button class="servo-preset" onclick="setServo(90)">90°</button>
+          <button class="servo-preset" onclick="setServo(135)">135°</button>
+          <button class="servo-preset" onclick="setServo(180)">180°</button>
+        </div>
+      </div>
+      <div class="status" id="servo-status"></div>
+    </div>
+  </div>
 
-    function sendLED() {
-      clearTimeout(ledDebounce);
-      ledDebounce = setTimeout(() => {
-        fetch('/led', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({r: +r.value, g: +g.value, b: +b.value})
-        })
-        .then(res => res.json())
-        .then(() => {
-          status.textContent = `Envoyé → R:${r.value} G:${g.value} B:${b.value}`;
-          status.className = 'status ok';
-        })
-        .catch(() => { status.textContent = 'Erreur'; status.className = 'status err'; });
-      }, 80);
-    }
+  <!-- PAGE STEPPER -->
+  <div class="page" id="page-stepper">
+    <div class="card">
+      <p class="card-title">Moteur pas-à-pas</p>
+      <div class="stepper-controls">
 
-    function setRGB(rv, gv, bv) {
-      r.value = rv; g.value = gv; b.value = bv;
-      updatePreview(); sendLED();
-    }
+        <div class="step-btns">
+          <button class="step-btn" id="btn-left"  onclick="moveStepper(-1)" title="Sens anti-horaire">↺</button>
+          <button class="step-btn" id="btn-right" onclick="moveStepper(1)"  title="Sens horaire">↻</button>
+        </div>
 
-    [r, g, b].forEach(s => s.addEventListener('input', () => { updatePreview(); sendLED(); }));
+        <p style="font-size:0.78rem;color:var(--muted)">Nombre de pas</p>
+        <div class="step-size">
+          <span class="step-chip" data-steps="128">128</span>
+          <span class="step-chip active" data-steps="512">512</span>
+          <span class="step-chip" data-steps="1024">1024</span>
+          <span class="step-chip" data-steps="2048">2048 (1 tour)</span>
+        </div>
 
-    // Calibration
-    ['r','g','b'].forEach(ch => {
-      document.getElementById(`cal-${ch}`).addEventListener('input', function() {
-        const val = (this.value / 100).toFixed(2);
-        document.getElementById(`vc${ch}`).textContent = val;
-        clearTimeout(calDebounce);
-        calDebounce = setTimeout(sendCalibration, 300);
-      });
+        <div class="stepper-status" id="stepper-status">Prêt</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// =====================
+// NAVIGATION
+// =====================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// =====================
+// LED
+// =====================
+const r = document.getElementById('r');
+const g = document.getElementById('g');
+const b = document.getElementById('b');
+const preview = document.getElementById('preview');
+let ledTimer;
+
+function updatePreview() {
+  document.getElementById('vr').textContent = r.value;
+  document.getElementById('vg').textContent = g.value;
+  document.getElementById('vb').textContent = b.value;
+  preview.style.background = `rgb(${r.value},${g.value},${b.value})`;
+}
+
+function sendLED() {
+  clearTimeout(ledTimer);
+  ledTimer = setTimeout(() => {
+    fetch('/led', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({r:+r.value, g:+g.value, b:+b.value})
+    })
+    .then(res => res.json())
+    .then(() => { setStatus('led-status', `R:${r.value} G:${g.value} B:${b.value}`, 'ok'); })
+    .catch(() => setStatus('led-status', 'Erreur', 'err'));
+  }, 80);
+}
+
+function setRGB(rv, gv, bv) {
+  r.value=rv; g.value=gv; b.value=bv;
+  updatePreview(); sendLED();
+}
+
+[r,g,b].forEach(s => s.addEventListener('input', () => { updatePreview(); sendLED(); }));
+updatePreview();
+
+// =====================
+// SERVO KNOB
+// =====================
+const CX = 100, CY = 110, RADIUS = 80;
+const START_ANGLE = Math.PI;       // gauche = 0°
+const END_ANGLE   = 0;             // droite = 180°
+
+let servoAngle = 90;
+let servoTimer;
+
+function polarToXY(angleDeg) {
+  // 0° = gauche (PI), 180° = droite (0)
+  const rad = Math.PI - (angleDeg / 180) * Math.PI;
+  return {
+    x: CX + RADIUS * Math.cos(rad),
+    y: CY - RADIUS * Math.sin(rad)
+  };
+}
+
+function describeArc(fromDeg, toDeg) {
+  const s = polarToXY(fromDeg);
+  const e = polarToXY(toDeg);
+  const large = Math.abs(toDeg - fromDeg) > 90 ? 1 : 0;
+  const sweep = toDeg > fromDeg ? 0 : 1;
+  return `M ${s.x} ${s.y} A ${RADIUS} ${RADIUS} 0 ${large} ${sweep} ${e.x} ${e.y}`;
+}
+
+function renderKnob(deg) {
+  document.getElementById('arc-bg').setAttribute('d', describeArc(0, 180));
+  document.getElementById('arc-active').setAttribute('d', describeArc(0, deg));
+  const p = polarToXY(deg);
+  document.getElementById('handle').setAttribute('cx', p.x);
+  document.getElementById('handle').setAttribute('cy', p.y);
+  document.getElementById('servo-val').textContent = Math.round(deg);
+}
+
+function setServo(deg) {
+  deg = Math.max(0, Math.min(180, deg));
+  servoAngle = deg;
+  renderKnob(deg);
+  clearTimeout(servoTimer);
+  servoTimer = setTimeout(() => {
+    fetch('/servo', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({angle: Math.round(deg)})
+    })
+    .then(res => res.json())
+    .then(() => setStatus('servo-status', `Position : ${Math.round(deg)}°`, 'ok'))
+    .catch(() => setStatus('servo-status', 'Erreur', 'err'));
+  }, 80);
+}
+
+// Drag sur le SVG
+const knob = document.getElementById('knob');
+let dragging = false;
+
+function svgAngleFromEvent(e) {
+  const rect = knob.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const scaleX = 200 / rect.width;
+  const scaleY = 120 / rect.height;
+  const x = (clientX - rect.left) * scaleX - CX;
+  const y = CY - (clientY - rect.top) * scaleY;
+  let deg = (Math.atan2(y, x) / Math.PI) * 180;
+  return Math.max(0, Math.min(180, deg));
+}
+
+knob.addEventListener('mousedown',  e => { dragging = true; setServo(svgAngleFromEvent(e)); });
+knob.addEventListener('touchstart', e => { dragging = true; setServo(svgAngleFromEvent(e)); }, {passive:true});
+window.addEventListener('mousemove',  e => { if (dragging) setServo(svgAngleFromEvent(e)); });
+window.addEventListener('touchmove',  e => { if (dragging) setServo(svgAngleFromEvent(e)); }, {passive:true});
+window.addEventListener('mouseup',  () => dragging = false);
+window.addEventListener('touchend', () => dragging = false);
+
+renderKnob(90);
+
+// =====================
+// STEPPER
+// =====================
+let selectedSteps = 512;
+let stepperBusy = false;
+
+document.querySelectorAll('.step-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.step-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    selectedSteps = parseInt(chip.dataset.steps);
+  });
+});
+
+function moveStepper(dir) {
+  if (stepperBusy) return;
+  const steps = selectedSteps * dir;
+  setStepperBusy(true);
+
+  fetch('/stepper', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({steps})
+  })
+  .then(res => res.json())
+  .then(() => pollStepper())
+  .catch(() => { setStatus('stepper-status', 'Erreur', 'err'); setStepperBusy(false); });
+}
+
+function pollStepper() {
+  fetch('/stepper/status')
+    .then(r => r.json())
+    .then(d => {
+      if (d.busy) setTimeout(pollStepper, 300);
+      else setStepperBusy(false);
     });
+}
 
-    function sendCalibration() {
-      const payload = {
-        r: document.getElementById('cal-r').value / 100,
-        g: document.getElementById('cal-g').value / 100,
-        b: document.getElementById('cal-b').value / 100,
-      };
-      fetch('/calibration', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(() => {
-        document.getElementById('cal-status').textContent = 'Calibration appliquée';
-        document.getElementById('cal-status').className = 'status ok';
-        // Renvoie la couleur courante avec la nouvelle calibration
-        sendLED();
-      });
-    }
+function setStepperBusy(busy) {
+  stepperBusy = busy;
+  document.getElementById('btn-left').disabled  = busy;
+  document.getElementById('btn-right').disabled = busy;
+  const st = document.getElementById('stepper-status');
+  st.textContent = busy ? `En rotation (${selectedSteps} pas)…` : 'Prêt';
+  st.className = 'stepper-status' + (busy ? ' busy' : '');
+}
 
-    updatePreview();
-  </script>
+// =====================
+// UTILS
+// =====================
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + (type || '');
+}
+</script>
 
 </body>
 </html>

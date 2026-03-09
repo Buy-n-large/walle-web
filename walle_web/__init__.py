@@ -7,8 +7,8 @@ app = Flask(__name__)
 
 _robot = None
 _lock  = threading.Lock()
+_stepper_thread = None
 
-# Calibration en mémoire (modifiable depuis l'interface)
 _calibration = {
     "r": WalleConfig.R_SCALE,
     "g": WalleConfig.G_SCALE,
@@ -27,6 +27,8 @@ def index():
     return render_template("index.html", cal=_calibration)
 
 
+# --- LED ---
+
 @app.route("/led", methods=["POST"])
 def led():
     data = request.get_json()
@@ -35,7 +37,7 @@ def led():
     b = int(data.get("b", 0))
     with _lock:
         get_robot().led(r, g, b)
-    return jsonify(ok=True, r=r, g=g, b=b)
+    return jsonify(ok=True)
 
 
 @app.route("/calibration", methods=["GET"])
@@ -48,18 +50,49 @@ def set_calibration():
     data = request.get_json()
     for ch in ("r", "g", "b"):
         if ch in data:
-            val = max(0.0, min(1.0, float(data[ch])))
-            _calibration[ch] = val
-    # Applique immédiatement en mettant à jour le robot
-    with _lock:
-        robot = get_robot()
-        robot._config_r = _calibration["r"]
-        robot._config_g = _calibration["g"]
-        robot._config_b = _calibration["b"]
-        WalleConfig.R_SCALE = _calibration["r"]
-        WalleConfig.G_SCALE = _calibration["g"]
-        WalleConfig.B_SCALE = _calibration["b"]
+            _calibration[ch] = max(0.0, min(1.0, float(data[ch])))
+    WalleConfig.R_SCALE = _calibration["r"]
+    WalleConfig.G_SCALE = _calibration["g"]
+    WalleConfig.B_SCALE = _calibration["b"]
     return jsonify(ok=True, **_calibration)
+
+
+# --- SERVO ---
+
+@app.route("/servo", methods=["POST"])
+def servo():
+    data = request.get_json()
+    angle = int(max(0, min(180, data.get("angle", 90))))
+    with _lock:
+        get_robot().servo(angle)
+    return jsonify(ok=True, angle=angle)
+
+
+# --- STEPPER ---
+
+@app.route("/stepper", methods=["POST"])
+def stepper():
+    global _stepper_thread
+    data = request.get_json()
+    steps = int(data.get("steps", 512))
+
+    # Stepper est bloquant — on le lance dans un thread pour ne pas bloquer Flask
+    if _stepper_thread and _stepper_thread.is_alive():
+        return jsonify(ok=False, error="Stepper already running"), 409
+
+    def run():
+        with _lock:
+            get_robot().stepper(steps)
+
+    _stepper_thread = threading.Thread(target=run, daemon=True)
+    _stepper_thread.start()
+    return jsonify(ok=True, steps=steps)
+
+
+@app.route("/stepper/status")
+def stepper_status():
+    busy = _stepper_thread is not None and _stepper_thread.is_alive()
+    return jsonify(busy=busy)
 
 
 def main():
