@@ -17,54 +17,49 @@
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      gap: 1.5rem;
     }
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.3rem;
-      letter-spacing: 2px;
-    }
-
+    h1 { font-size: 2rem; letter-spacing: 2px; }
     h1 span { color: #f5c400; }
-
-    .subtitle {
-      font-size: 0.85rem;
-      color: #888;
-      margin-bottom: 2.5rem;
-    }
+    .subtitle { font-size: 0.85rem; color: #888; }
 
     .card {
       background: #16213e;
       border-radius: 1.2rem;
-      padding: 2rem;
+      padding: 1.8rem;
       width: 100%;
       max-width: 380px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
 
+    .card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      margin-bottom: 1.2rem;
+    }
+
     .preview {
       width: 100%;
-      height: 100px;
+      height: 90px;
       border-radius: 0.8rem;
       margin-bottom: 1.5rem;
       background: #000;
-      transition: background 0.2s;
+      transition: background 0.15s;
       border: 2px solid #2a2a4a;
     }
 
-    .sliders { display: flex; flex-direction: column; gap: 1rem; }
+    .sliders { display: flex; flex-direction: column; gap: 0.9rem; }
 
-    .slider-row { display: flex; align-items: center; gap: 1rem; }
+    .slider-row { display: flex; align-items: center; gap: 0.8rem; }
 
-    .slider-row label {
-      width: 1.2rem;
-      font-weight: bold;
-      font-size: 1rem;
-    }
-
+    .slider-row label { width: 1.2rem; font-weight: bold; font-size: 1rem; }
     .slider-row label.r { color: #ff4444; }
     .slider-row label.g { color: #44ff44; }
     .slider-row label.b { color: #4488ff; }
+    .slider-row label.cal { font-size: 0.75rem; color: #aaa; width: 1.5rem; }
 
     input[type=range] {
       flex: 1;
@@ -77,65 +72,73 @@
     input#r { background: linear-gradient(to right, #000, #ff4444); }
     input#g { background: linear-gradient(to right, #000, #44ff44); }
     input#b { background: linear-gradient(to right, #000, #4488ff); }
+    input.cal-r { background: linear-gradient(to right, #333, #ff4444); }
+    input.cal-g { background: linear-gradient(to right, #333, #44ff44); }
+    input.cal-b { background: linear-gradient(to right, #333, #4488ff); }
 
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+      width: 18px; height: 18px;
       border-radius: 50%;
       background: #fff;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
-    .value {
-      width: 2.5rem;
-      text-align: right;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
+    .value { width: 2.5rem; text-align: right; font-size: 0.8rem; color: #aaa; }
 
     .presets {
       display: flex;
-      gap: 0.6rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
-      margin-top: 1.5rem;
+      margin-top: 1.2rem;
     }
 
     .preset {
       flex: 1;
-      min-width: 60px;
-      padding: 0.5rem;
+      min-width: 55px;
+      padding: 0.45rem 0.2rem;
       border: none;
       border-radius: 0.5rem;
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: bold;
       color: #fff;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
       transition: transform 0.1s;
     }
 
     .preset:active { transform: scale(0.95); }
 
     .status {
-      margin-top: 1.2rem;
+      margin-top: 1rem;
       font-size: 0.75rem;
-      color: #666;
+      color: #555;
       text-align: center;
       min-height: 1rem;
     }
-
     .status.ok  { color: #44ff44; }
     .status.err { color: #ff4444; }
+
+    details { width: 100%; max-width: 380px; }
+    summary {
+      font-size: 0.75rem;
+      color: #555;
+      cursor: pointer;
+      text-align: center;
+      padding: 0.3rem;
+    }
+    summary:hover { color: #888; }
   </style>
 </head>
 <body>
 
   <h1>W<span>A</span>LL-E</h1>
-  <p class="subtitle">Contrôle de la LED RGB</p>
+  <p class="subtitle">Contrôle LED RGB</p>
 
+  <!-- Contrôle couleur principal -->
   <div class="card">
+    <h2>Couleur</h2>
     <div class="preview" id="preview"></div>
 
     <div class="sliders">
@@ -157,16 +160,46 @@
     </div>
 
     <div class="presets">
-      <button class="preset" style="background:#ff2222" onclick="setRGB(255,0,0)">Rouge</button>
-      <button class="preset" style="background:#22bb22" onclick="setRGB(0,255,0)">Vert</button>
+      <button class="preset" style="background:#cc2200" onclick="setRGB(255,0,0)">Rouge</button>
+      <button class="preset" style="background:#009900" onclick="setRGB(0,255,0)">Vert</button>
       <button class="preset" style="background:#2255ff" onclick="setRGB(0,0,255)">Bleu</button>
-      <button class="preset" style="background:#f5c400;color:#000" onclick="setRGB(245,196,0)">Jaune</button>
-      <button class="preset" style="background:#ff6600" onclick="setRGB(255,100,0)">Orange</button>
-      <button class="preset" style="background:#222" onclick="setRGB(0,0,0)">Éteint</button>
+      <button class="preset" style="background:#f5c400;color:#000" onclick="setRGB(255,255,0)">Jaune</button>
+      <button class="preset" style="background:#ff6600" onclick="setRGB(255,140,0)">Orange</button>
+      <button class="preset" style="background:#888" onclick="setRGB(255,255,255)">Blanc</button>
+      <button class="preset" style="background:#111;border:1px solid #333" onclick="setRGB(0,0,0)">Éteint</button>
     </div>
 
     <div class="status" id="status"></div>
   </div>
+
+  <!-- Calibration (repliée par défaut) -->
+  <details>
+    <summary>⚙️ Calibration des canaux</summary>
+    <div class="card" style="margin-top:0.5rem">
+      <h2>Correction par canal (0 → 1.0)</h2>
+      <p style="font-size:0.72rem;color:#666;margin-bottom:1rem">
+        Si le blanc tire vers une couleur, réduire ce canal. Rouge trop faible ? Augmenter R.
+      </p>
+      <div class="sliders">
+        <div class="slider-row">
+          <label class="cal r">R</label>
+          <input type="range" class="cal-r" id="cal-r" min="0" max="100" value="{{ (cal.r * 100)|int }}">
+          <span class="value" id="vcr">{{ "%.2f"|format(cal.r) }}</span>
+        </div>
+        <div class="slider-row">
+          <label class="cal g">G</label>
+          <input type="range" class="cal-g" id="cal-g" min="0" max="100" value="{{ (cal.g * 100)|int }}">
+          <span class="value" id="vcg">{{ "%.2f"|format(cal.g) }}</span>
+        </div>
+        <div class="slider-row">
+          <label class="cal b">B</label>
+          <input type="range" class="cal-b" id="cal-b" min="0" max="100" value="{{ (cal.b * 100)|int }}">
+          <span class="value" id="vcb">{{ "%.2f"|format(cal.b) }}</span>
+        </div>
+      </div>
+      <div class="status" id="cal-status"></div>
+    </div>
+  </details>
 
   <script>
     const r = document.getElementById('r');
@@ -175,45 +208,68 @@
     const preview = document.getElementById('preview');
     const status  = document.getElementById('status');
 
-    let debounce;
+    let ledDebounce, calDebounce;
 
     function updatePreview() {
-      const rv = r.value, gv = g.value, bv = b.value;
-      document.getElementById('vr').textContent = rv;
-      document.getElementById('vg').textContent = gv;
-      document.getElementById('vb').textContent = bv;
-      preview.style.background = `rgb(${rv},${gv},${bv})`;
+      document.getElementById('vr').textContent = r.value;
+      document.getElementById('vg').textContent = g.value;
+      document.getElementById('vb').textContent = b.value;
+      preview.style.background = `rgb(${r.value},${g.value},${b.value})`;
     }
 
     function sendLED() {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => {
+      clearTimeout(ledDebounce);
+      ledDebounce = setTimeout(() => {
         fetch('/led', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ r: +r.value, g: +g.value, b: +b.value })
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({r: +r.value, g: +g.value, b: +b.value})
         })
         .then(res => res.json())
         .then(() => {
           status.textContent = `Envoyé → R:${r.value} G:${g.value} B:${b.value}`;
           status.className = 'status ok';
         })
-        .catch(() => {
-          status.textContent = 'Erreur de connexion';
-          status.className = 'status err';
-        });
+        .catch(() => { status.textContent = 'Erreur'; status.className = 'status err'; });
       }, 80);
     }
 
     function setRGB(rv, gv, bv) {
       r.value = rv; g.value = gv; b.value = bv;
-      updatePreview();
-      sendLED();
+      updatePreview(); sendLED();
     }
 
-    [r, g, b].forEach(s => {
-      s.addEventListener('input', () => { updatePreview(); sendLED(); });
+    [r, g, b].forEach(s => s.addEventListener('input', () => { updatePreview(); sendLED(); }));
+
+    // Calibration
+    ['r','g','b'].forEach(ch => {
+      document.getElementById(`cal-${ch}`).addEventListener('input', function() {
+        const val = (this.value / 100).toFixed(2);
+        document.getElementById(`vc${ch}`).textContent = val;
+        clearTimeout(calDebounce);
+        calDebounce = setTimeout(sendCalibration, 300);
+      });
     });
+
+    function sendCalibration() {
+      const payload = {
+        r: document.getElementById('cal-r').value / 100,
+        g: document.getElementById('cal-g').value / 100,
+        b: document.getElementById('cal-b').value / 100,
+      };
+      fetch('/calibration', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(() => {
+        document.getElementById('cal-status').textContent = 'Calibration appliquée';
+        document.getElementById('cal-status').className = 'status ok';
+        // Renvoie la couleur courante avec la nouvelle calibration
+        sendLED();
+      });
+    }
 
     updatePreview();
   </script>
