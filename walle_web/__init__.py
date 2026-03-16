@@ -106,24 +106,8 @@ def chat():
     if not message:
         return jsonify(ok=False, error="empty message"), 400
 
-    reply, commands = _brain.think(message)
-
-    # Exécute les commandes hardware retournées par le cerveau
-    errors = []
-    for cmd in commands:
-        try:
-            with _lock:
-                robot = get_robot()
-                if cmd["type"] == "LED":
-                    robot.led(*cmd["args"])
-                elif cmd["type"] == "SERVO":
-                    robot.servo(*cmd["args"])
-                elif cmd["type"] == "STEPPER":
-                    robot.stepper(*cmd["args"])
-        except Exception as e:
-            errors.append(str(e))
-
-    return jsonify(ok=True, reply=reply, commands=commands, errors=errors)
+    reply = _brain.think(message)
+    return jsonify(ok=True, reply=reply)
 
 
 @app.route("/chat/reset", methods=["POST"])
