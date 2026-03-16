@@ -219,6 +219,89 @@
     }
     .stepper-status.busy { color: var(--accent); }
 
+    /* === CHAT === */
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 260px;
+      max-height: 360px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      padding-right: 0.2rem;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 0.6rem 0.9rem;
+      border-radius: 1rem;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: #252550;
+      color: var(--text);
+      border-bottom-right-radius: 0.2rem;
+    }
+    .bubble.walle {
+      align-self: flex-start;
+      background: var(--accent);
+      color: #000;
+      font-weight: 500;
+      border-bottom-left-radius: 0.2rem;
+    }
+    .bubble.thinking {
+      align-self: flex-start;
+      background: #1e1e40;
+      color: var(--muted);
+      font-style: italic;
+      font-size: 0.8rem;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0.6rem;
+    }
+    .chat-input {
+      flex: 1;
+      background: #252550;
+      border: 1px solid #303060;
+      border-radius: 0.6rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 0.55rem 0.8rem;
+      outline: none;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+
+    .chat-send {
+      padding: 0.55rem 1rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 0.6rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: opacity 0.15s;
+    }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .chat-reset {
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: right;
+      display: block;
+      width: 100%;
+      margin-top: 0.4rem;
+    }
+    .chat-reset:hover { color: var(--text); }
+
     /* === STATUS === */
     .status {
       font-size: 0.75rem; color: var(--muted);
@@ -241,6 +324,9 @@
   </button>
   <button class="nav-item" onclick="showPage('stepper', this)">
     <span class="nav-icon">⚙️</span> Stepper
+  </button>
+  <button class="nav-item" onclick="showPage('chat', this)">
+    <span class="nav-icon">🤖</span> Parler
   </button>
 </aside>
 
@@ -337,6 +423,20 @@
 
         <div class="stepper-status" id="stepper-status">Prêt</div>
       </div>
+    </div>
+  </div>
+
+  <!-- PAGE CHAT -->
+  <div class="page" id="page-chat">
+    <div class="card">
+      <p class="card-title">Parler à WALL-E</p>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" type="text"
+               placeholder="Dis quelque chose à WALL-E…" autocomplete="off">
+        <button class="chat-send" id="chat-send" onclick="sendChat()">▶</button>
+      </div>
+      <button class="chat-reset" onclick="resetChat()">Effacer la conversation</button>
     </div>
   </div>
 
@@ -525,6 +625,56 @@ function setStepperBusy(busy) {
   const st = document.getElementById('stepper-status');
   st.textContent = busy ? `En rotation (${selectedSteps} pas)…` : 'Prêt';
   st.className = 'stepper-status' + (busy ? ' busy' : '');
+}
+
+// =====================
+// CHAT
+// =====================
+const chatMessages = document.getElementById('chat-messages');
+const chatInput    = document.getElementById('chat-input');
+const chatSend     = document.getElementById('chat-send');
+
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+function addBubble(text, type) {
+  const b = document.createElement('div');
+  b.className = 'bubble ' + type;
+  b.textContent = text;
+  chatMessages.appendChild(b);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return b;
+}
+
+function sendChat() {
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  addBubble(msg, 'user');
+  const thinking = addBubble('…', 'thinking');
+
+  fetch('/chat', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message: msg})
+  })
+  .then(r => r.json())
+  .then(d => {
+    thinking.remove();
+    if (d.ok) {
+      addBubble(d.reply, 'walle');
+    } else {
+      addBubble('(erreur)', 'thinking');
+    }
+  })
+  .catch(() => { thinking.remove(); addBubble('(erreur réseau)', 'thinking'); })
+  .finally(() => { chatSend.disabled = false; chatInput.focus(); });
+}
+
+function resetChat() {
+  fetch('/chat/reset', {method: 'POST'});
+  chatMessages.innerHTML = '';
 }
 
 // =====================

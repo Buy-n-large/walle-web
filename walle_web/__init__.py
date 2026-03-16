@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from walle.serial import WalleSerial
 from walle.config import WalleConfig
+from walle_brain import WalleBrain
 import threading
 
 app = Flask(__name__)
@@ -8,6 +9,7 @@ app = Flask(__name__)
 _robot = None
 _lock  = threading.Lock()
 _stepper_thread = None
+_brain = WalleBrain()
 
 _calibration = {
     "r": WalleConfig.R_SCALE,
@@ -93,6 +95,41 @@ def stepper():
 def stepper_status():
     busy = _stepper_thread is not None and _stepper_thread.is_alive()
     return jsonify(busy=busy)
+
+
+# --- CHAT ---
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    message = data.get("message", "").strip()
+    if not message:
+        return jsonify(ok=False, error="empty message"), 400
+
+    reply, commands = _brain.think(message)
+
+    # Exécute les commandes hardware retournées par le cerveau
+    errors = []
+    for cmd in commands:
+        try:
+            with _lock:
+                robot = get_robot()
+                if cmd["type"] == "LED":
+                    robot.led(*cmd["args"])
+                elif cmd["type"] == "SERVO":
+                    robot.servo(*cmd["args"])
+                elif cmd["type"] == "STEPPER":
+                    robot.stepper(*cmd["args"])
+        except Exception as e:
+            errors.append(str(e))
+
+    return jsonify(ok=True, reply=reply, commands=commands, errors=errors)
+
+
+@app.route("/chat/reset", methods=["POST"])
+def chat_reset():
+    _brain.reset()
+    return jsonify(ok=True)
 
 
 def main():
